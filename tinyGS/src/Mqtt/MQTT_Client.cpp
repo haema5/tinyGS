@@ -697,10 +697,10 @@ void MQTT_Client::manageMQTTData(char* topic, uint8_t* payload, unsigned int len
   if (global) return;
 
   // All station-specific commands below require the radio to be initialized
-  if (!radio.isReady()) {
-    LOG_CONSOLE_ASYNC(PSTR("Radio not ready, ignoring remote command: %s"), command);
-    return;
-  }
+  // if (!radio.isReady()) {
+  //   LOG_CONSOLE_ASYNC(PSTR("Radio not ready, ignoring remote command: %s"), command);
+  //   return;
+  // }
 
   if (!strcmp(command, commandBeginp)) {
     char buff[length + 1];

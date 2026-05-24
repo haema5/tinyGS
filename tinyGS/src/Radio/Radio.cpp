@@ -197,9 +197,12 @@ int16_t Radio::begin()
 {
   status.radio_ready = false;
   board_t board;
-  if (!ConfigStore::getInstance().getBoardConfig(board))
+  if (!ConfigStore::getInstance().getBoardConfig(board)) {
+    status.radio_error = -255;   // 
     return -1;
+  }
   
+
   ModemInfo &m = status.modeminfo;
   if (strcmp(m.modem_mode, "LoRa") == 0)
   {
@@ -253,8 +256,8 @@ int16_t Radio::begin()
   radioHal->setRxBoostedGainMode(true);
   CHECK_ERROR(radioHal->startReceive());
   status.modeminfo.currentRssi = radioHal->getRSSI(false,true);
-
   status.radio_ready = true;
+  
   return RADIOLIB_ERR_NONE;
 }
 
