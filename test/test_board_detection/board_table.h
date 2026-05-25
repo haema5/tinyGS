@@ -81,6 +81,10 @@ struct BoardDef {
     uint8_t     radio_mosi;
     uint8_t     radio_sck;
 
+    // AXP power-management chip
+    uint8_t     axp_addr;    ///< I2C address (0x34 or 0 = none)
+    uint8_t     axp_chip;    ///< Chip-ID: 0x03=AXP192, 0x4A=AXP2101, 0x00=none
+
     const char* name;
 
     // Helpers -----------------------------------------------------------
@@ -167,12 +171,15 @@ static int detect_board(const BoardDef* boards, int n, const BoardDef& target) {
     }
 
     if (oled_addr != 0) {
-        // ── Phase 3a: radio probe among OLED-matching candidates ──────────
+        // ── Phase 3a: AXP filter + radio probe among OLED-matching candidates
+        // The AXP probe result is simulated by target.axp_chip (bidirectional
+        // strict-equality: only candidates matching the detected AXP survive).
         int first_candidate = -1;
         for (int i = 0; i < n; i++) {
             if (boards[i].oled_addr != oled_addr) continue;
             if (boards[i].oled_sda  != oled_sda)  continue;
             if (boards[i].oled_scl  != oled_scl)  continue;
+            if (boards[i].axp_chip  != target.axp_chip) continue;  // AXP filter
             if (first_candidate < 0) first_candidate = i;
             if (boards[i].radio_matches(target)) return i;
         }
@@ -203,7 +210,7 @@ static int detect_board(const BoardDef* boards, int n, const BoardDef& target) {
 
 // Struct field order: oled_addr, oled_sda, oled_scl, oled_rst, eth_en,
 //                    radio_type, radio_nss, radio_miso, radio_mosi, radio_sck,
-//                    name
+//                    axp_addr, axp_chip, name
 
 // ---------------------------------------------------------------------------
 //  ESP32 classic
@@ -214,81 +221,82 @@ static const BoardDef boards[] = {
     // ── OLED bus (addr=0x3C, SDA=4, SCL=15) ────────────────────────────
     // idx  0  HELTEC_V1_LF    SX1278  NSS=18 MISO=19 MOSI=27 SCK=5
     { 0x3c, 4, 15, 16, false, RT_SX1278, 18, 19, 27, 5,
-      "433MHz HELTEC WiFi LoRA 32 V1"                                      },
+      0, 0x00, "433MHz HELTEC WiFi LoRA 32 V1"                             },
     // idx  1  HELTEC_V1_HF    SX1276  NSS=18 MISO=19 MOSI=27 SCK=5  ← same family/pins as 0
     { 0x3c, 4, 15, 16, false, RT_SX1276, 18, 19, 27, 5,
-      "863-928MHz HELTEC WiFi LoRA 32 V1"                                  },
+      0, 0x00, "863-928MHz HELTEC WiFi LoRA 32 V1"                         },
     // idx  2  HELTEC_V2_LF    SX1278  same SPI as 0
     { 0x3c, 4, 15, 16, false, RT_SX1278, 18, 19, 27, 5,
-      "433MHz HELTEC WiFi LoRA 32 V2"                                      },
+      0, 0x00, "433MHz HELTEC WiFi LoRA 32 V2"                             },
     // idx  3  HELTEC_V2_HF    SX1276  same SPI as 0
     { 0x3c, 4, 15, 16, false, RT_SX1276, 18, 19, 27, 5,
-      "863-928MHz HELTEC WiFi LoRA 32 V2"                                  },
+      0, 0x00, "863-928MHz HELTEC WiFi LoRA 32 V2"                         },
     // idx  4  TTGO_V1_LF      SX1278  same SPI as 0
     { 0x3c, 4, 15, 16, false, RT_SX1278, 18, 19, 27, 5,
-      "433MHz TTGO LoRa 32 V1"                                             },
+      0, 0x00, "433MHz TTGO LoRa 32 V1"                                    },
     // idx  5  TTGO_V1_HF      SX1276  same SPI as 0
     { 0x3c, 4, 15, 16, false, RT_SX1276, 18, 19, 27, 5,
-      "868-915MHz TTGO LoRa 32 V1"                                         },
+      0, 0x00, "868-915MHz TTGO LoRa 32 V1"                                },
 
     // ── OLED bus (addr=0x3C, SDA=21, SCL=22) ───────────────────────────
     // idx  6  TTGO_V2_LF      SX1278  NSS=18 MISO=19 MOSI=27 SCK=5
     { 0x3c, 21, 22, UNUSED_PIN, false, RT_SX1278, 18, 19, 27, 5,
-      "433MHz TTGO LoRA 32 V2"                                             },
+      0, 0x00, "433MHz TTGO LoRA 32 V2"                                    },
     // idx  7  TTGO_V2_HF      SX1276  same SPI as 6  ← same family/pins
     { 0x3c, 21, 22, 16,        false, RT_SX1276, 18, 19, 27, 5,
-      "868-915MHz TTGO LoRA 32 V2"                                         },
-    // idx  8  TBEAM_OLED_LF   SX1278  same SPI as 6
+      0, 0x00, "868-915MHz TTGO LoRA 32 V2"                                },
+    // idx  8  TBEAM_OLED_LF   SX1278  same SPI as 6  (AXP192)
     { 0x3c, 21, 22, 16,        false, RT_SX1278, 18, 19, 27, 5,
-      "433MHz T-BEAM + OLED"                                               },
-    // idx  9  TBEAM_OLED_HF   SX1276  same SPI as 6
+      0x34, 0x03, "433MHz T-BEAM + OLED"                                   },
+    // idx  9  TBEAM_OLED_HF   SX1276  same SPI as 6  (AXP192)
     { 0x3c, 21, 22, 16,        false, RT_SX1276, 18, 19, 27, 5,
-      "868-915MHz T-BEAM + OLED"                                           },
+      0x34, 0x03, "868-915MHz T-BEAM + OLED"                               },
     // idx 10  ESP32_SX126X_XTAL  SX1268  NSS=5 MISO=19 MOSI=23 SCK=18  ← unique
     { 0x3c, 21, 22, 16,        false, RT_SX1268,  5, 19, 23, 18,
-      "Custom ESP32 Wroom + SX126x (Crystal)"                              },
+      0, 0x00, "Custom ESP32 Wroom + SX126x (Crystal)"                     },
     // idx 11  TTGO_V2_SX126X_XTAL  SX1268  NSS=18 MISO=19 MOSI=27 SCK=5 ← SX126x on same pins as 6
     { 0x3c, 21, 22, UNUSED_PIN, false, RT_SX1268, 18, 19, 27, 5,
-      "TTGO LoRa 32 V2 Modified with SX126x (crystal)"                     },
+      0, 0x00, "TTGO LoRa 32 V2 Modified with SX126x (crystal)"            },
     // idx 12  DRF1268T (5,2,26,13)  SX1268  NSS=5 MISO=19 MOSI=23 SCK=18 ← same SPI as 10
     { 0x3c, 21, 22, 16,        false, RT_SX1268,  5, 19, 23, 18,
-      "Custom ESP32 Wroom + SX126x DRF1268T TCX0 (5,2,26,13)"             },
+      0, 0x00, "Custom ESP32 Wroom + SX126x DRF1268T TCX0 (5,2,26,13)"    },
     // idx 13  DRF1268T (5,26,14,12)  SX1268  same SPI as 10
     { 0x3c, 21, 22, 16,        false, RT_SX1268,  5, 19, 23, 18,
-      "Custom ESP32 Wroom + SX126x DRF1268T TCX0 (5,26,14,12)"            },
-    // idx 14  TBEAM_V1.0       SX1278  same SPI as 6
+      0, 0x00, "Custom ESP32 Wroom + SX126x DRF1268T TCX0 (5,26,14,12)"   },
+    // idx 14  TBEAM_V1.0       SX1278  same SPI as 6  (AXP192)
     { 0x3c, 21, 22, UNUSED_PIN, false, RT_SX1278, 18, 19, 27, 5,
-      "433MHz T-BEAM V1.0 + OLED"                                          },
+      0x34, 0x03, "433MHz T-BEAM V1.0 + OLED"                              },
     // idx 15  FOSSA_LF         SX1268  NSS=5 MISO=19 MOSI=27 SCK=18  ← unique
     { 0x3c, 21, 22, 16,        false, RT_SX1268,  5, 19, 27, 18,
-      "433MHz FOSSA 1W Ground Station"                                      },
+      0, 0x00, "433MHz FOSSA 1W Ground Station"                             },
     // idx 16  FOSSA_HF         SX1276  NSS=5 MISO=19 MOSI=27 SCK=18  ← SX127x on (NSS=5,SCK=18)
     { 0x3c, 21, 22, 16,        false, RT_SX1276,  5, 19, 27, 18,
-      "868-915MHz FOSSA 1W Ground Station"                                  },
+      0, 0x00, "868-915MHz FOSSA 1W Ground Station"                         },
     // idx 17  ESP32_SX1280     SX1280  NSS=5 MISO=19 MOSI=27 SCK=18  ← unique (SX1280 family)
     { 0x3c, 21, 22, UNUSED_PIN, false, RT_SX1280,  5, 19, 27, 18,
-      "2.4GHz ESP32 + SX1280"                                              },
-    // idx 18  TBEAM_V1.0_HF    SX1276  same SPI as 6
+      0, 0x00, "2.4GHz ESP32 + SX1280"                                     },
+    // idx 18  TBEAM_V1.0_HF    SX1276  same SPI as 6  (AXP192)
     { 0x3c, 21, 22, UNUSED_PIN, false, RT_SX1276, 18, 19, 27, 5,
-      "868-915MHz T-BEAM V1.0 + OLED"                                      },
+      0x34, 0x03, "868-915MHz T-BEAM V1.0 + OLED"                          },
     // idx 19  LILYGO_T3_LF     SX1278  same SPI as 6
     { 0x3c, 21, 22, UNUSED_PIN, false, RT_SX1278, 18, 19, 27, 5,
-      "433MHz LILYGO T3_V1.6.1"                                            },
+      0, 0x00, "433MHz LILYGO T3_V1.6.1"                                   },
     // idx 20  LILYGO_T3_HF     SX1276  same SPI as 6
     { 0x3c, 21, 22, UNUSED_PIN, false, RT_SX1276, 18, 19, 27, 5,
-      "868-915MHz LILYGO T3_V1.6.1"                                        },
+      0, 0x00, "868-915MHz LILYGO T3_V1.6.1"                               },
     // idx 21  LILYGO_T3_TCXO   SX1276  same SPI as 6
     { 0x3c, 21, 22, UNUSED_PIN, false, RT_SX1276, 18, 19, 27, 5,
-      "868-915MHz LILYGO T3_V1.6.1 TCXO"                                  },
+      0, 0x00, "868-915MHz LILYGO T3_V1.6.1 TCXO"                          },
     // idx 22  TBEAM_SX1268     SX1268  NSS=18 MISO=19 MOSI=27 SCK=5 ← SX126x, same SPI as 11
+    // TODO: verify AXP2101 on T-Beam SX1268 V1.0
     { 0x3c, 21, 22, UNUSED_PIN, false, RT_SX1268, 18, 19, 27, 5,
-      "433MHz T-Beam SX1268 V1.0"                                          },
+      0, 0x00, "433MHz T-Beam SX1268 V1.0"                                 },
 
     // ── Ethernet-only (no OLED) ─────────────────────────────────────────
     // idx 23  WT32_ETH01
     { 0, UNUSED_PIN, UNUSED_PIN, UNUSED_PIN, true,
       RT_NONE, UNUSED_PIN, UNUSED_PIN, UNUSED_PIN, UNUSED_PIN,
-      "WT32-ETH01/02 (LAN8720)"                                            },
+      0, 0x00, "WT32-ETH01/02 (LAN8720)"                                   },
 };
 
 static constexpr int NUM_BOARDS = static_cast<int>(sizeof(boards) / sizeof(boards[0]));
@@ -304,35 +312,35 @@ static const BoardDef boards[] = {
     // ── OLED bus (addr=0x3C, SDA=17, SCL=18) ───────────────────────────
     // idx 0  HELTEC_LORA32_V3  SX1262  NSS=8 MISO=11 MOSI=10 SCK=9
     { 0x3c, 17, 18, 21,         false, RT_SX1262,  8, 11, 10, 9,
-      "150-960MHz HELTEC LORA32 V3 SX1262"                                 },
+      0, 0x00, "150-960MHz HELTEC LORA32 V3 SX1262"                        },
     // idx 1  Custom S3 SX1278   SX1278  NSS=8 MISO=11 MOSI=10 SCK=9  ← SX127x on same SPI as 0
     { 0x3c, 17, 18, UNUSED_PIN, false, RT_SX1278,  8, 11, 10, 9,
-      "Custom ESP32-S3 433MHz SX1278"                                      },
-    // idx 2  TTGO T-Beam SX1262  SX1262  NSS=10 MISO=13 MOSI=11 SCK=12  ← unique SPI
+      0, 0x00, "Custom ESP32-S3 433MHz SX1278"                             },
+    // idx 2  TTGO T-Beam SX1262  SX1262  NSS=10 MISO=13 MOSI=11 SCK=12  ← unique SPI (AXP2101)
     { 0x3c, 17, 18, UNUSED_PIN, false, RT_SX1262, 10, 13, 11, 12,
-      "433MHz TTGO T-Beam Sup SX1262 V1.0"                                 },
+      0x34, 0x4A, "433MHz TTGO T-Beam Sup SX1262 V1.0"                    },
     // idx 3  LILYGO SX1280       SX1280  NSS=7 MISO=3 MOSI=6 SCK=5  ← unique
     { 0x3c, 17, 18, UNUSED_PIN, false, RT_SX1280,  7,  3,  6, 5,
-      "2.4GHz LILYGO SX1280"                                               },
+      0, 0x00, "2.4GHz LILYGO SX1280"                                      },
     // idx 4  Custom S3 LR2021   LR2021  NSS=8 MISO=11 MOSI=10 SCK=9  ← LR11XX family on this bus
     { 0x3c, 17, 18, UNUSED_PIN, false, RT_LR2021,  8, 11, 10, 9,
-      "Custom ESP32-S3 433MHz + LR2021"                                    },
+      0, 0x00, "Custom ESP32-S3 433MHz + LR2021"                           },
 
     // ── No OLED, no ETH — radio-only boards (cannot be auto-detected) ───
     // idx 5  Heltec WSL V3  SX1262  same radio SPI as idx 0, no OLED
     { 0,    UNUSED_PIN, UNUSED_PIN, UNUSED_PIN, false, RT_SX1262,  8, 11, 10, 9,
-      "150-960Mhz - HELTEC WSL V3 SX1262"                                  },
+      0, 0x00, "150-960Mhz - HELTEC WSL V3 SX1262"                         },
 
     // ── Ethernet-only (no OLED) ─────────────────────────────────────────
     // idx 6  Waveshare ETH
     { 0,    UNUSED_PIN, UNUSED_PIN, UNUSED_PIN, true,
       RT_NONE, UNUSED_PIN, UNUSED_PIN, UNUSED_PIN, UNUSED_PIN,
-      "Waveshare ESP32-S3-ETH (W5500)"                                     },
+      0, 0x00, "Waveshare ESP32-S3-ETH (W5500)"                            },
 
     // ── OLED bus (addr=0x3C, SDA=18, SCL=17) ← SDA/SCL swapped vs idx 0-4
     // idx 7  EoRa-HUB LR1121   LR1121  NSS=8 MISO=11 MOSI=10 SCK=9  ← unique LR11xx family
     { 0x3c, 18, 17, 21,         false, RT_LR1121,  8, 11, 10, 9,
-      "EBYTE EoRa-HUB ESP32S3 + LR1121"                                    },
+      0, 0x00, "EBYTE EoRa-HUB ESP32S3 + LR1121"                           },
 };
 
 static constexpr int NUM_BOARDS = static_cast<int>(sizeof(boards) / sizeof(boards[0]));
@@ -348,10 +356,10 @@ static const BoardDef boards[] = {
     // ── OLED bus (addr=0x3C, SDA=0, SCL=1) ─────────────────────────────
     // idx 0  HELTEC HT-CT62  SX1262  NSS=8 MISO=6 MOSI=7 SCK=10
     { 0x3c, 0, 1, UNUSED_PIN, false, RT_SX1262,  8, 6, 7, 10,
-      "433MHz HELTEC LORA32 HT-CT62 SX1262"                                },
+      0, 0x00, "433MHz HELTEC LORA32 HT-CT62 SX1262"                       },
     // idx 1  Custom C3 SX1278  SX1278  NSS=8 MISO=6 MOSI=7 SCK=10  ← SX127x on same SPI
     { 0x3c, 0, 1, UNUSED_PIN, false, RT_SX1278,  8, 6, 7, 10,
-      "Custom ESP32-C3 433MHz SX1278"                                       },
+      0, 0x00, "Custom ESP32-C3 433MHz SX1278"                              },
 };
 
 static constexpr int NUM_BOARDS = static_cast<int>(sizeof(boards) / sizeof(boards[0]));
@@ -370,7 +378,7 @@ static const BoardDef boards[] = {
     // UNUSED_PIN — matches itself trivially).
     { 0, UNUSED_PIN, UNUSED_PIN, UNUSED_PIN, false,
       RT_NONE, UNUSED_PIN, UNUSED_PIN, UNUSED_PIN, UNUSED_PIN,
-      "Custom ESP32-C6 (no radio)"                                          },
+      0, 0x00, "Custom ESP32-C6 (no radio)"                                 },
 };
 
 static constexpr int NUM_BOARDS = static_cast<int>(sizeof(boards) / sizeof(boards[0]));
@@ -392,25 +400,33 @@ static void print_board_table(const char* chip, const BoardDef* boards, int n) {
     const int W_CHIP = 9;   // "ESP32-S3" = 8 chars
     const int W_IDX  = 3;   // up to 2 digits
     const int W_NAME = 55;  // longest name ~55 chars
+    const int W_AXP  = 4;   // "0x4A" = 4 chars
 
     // Header
-    printf("\n%-*s | %*s | %-*s | %s\n",
+    printf("\n%-*s | %*s | %*s | %-*s | %s\n",
            W_CHIP, "Processor",
            W_IDX,  "Idx",
+           W_AXP,  "AXP",
            W_NAME, "Board name",
            "Detected as");
 
     // Separator
-    const int sep_len = W_CHIP + 3 + W_IDX + 3 + W_NAME + 3 + W_NAME;
+    const int sep_len = W_CHIP + 3 + W_IDX + 3 + W_AXP + 3 + W_NAME + 3 + W_NAME;
     for (int c = 0; c < sep_len; c++) putchar('-');
     putchar('\n');
 
     for (int i = 0; i < n; i++) {
         int det = detect_board(boards, n, boards[i]);
         const char* det_name = (det >= 0) ? boards[det].name : "(not detected)";
-        printf("%-*s | %*d | %-*s | %s\n",
+        char axp_str[8];
+        if (boards[i].axp_chip != 0)
+            snprintf(axp_str, sizeof(axp_str), "0x%02X", boards[i].axp_chip);
+        else
+            snprintf(axp_str, sizeof(axp_str), "  - ");
+        printf("%-*s | %*d | %*s | %-*s | %s\n",
                W_CHIP, chip,
                W_IDX,  i,
+               W_AXP,  axp_str,
                W_NAME, boards[i].name,
                det_name);
     }

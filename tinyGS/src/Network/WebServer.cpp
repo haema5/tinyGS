@@ -20,6 +20,7 @@
 #include "WebServer.h"
 #include "../Logger/Logger.h"
 #include "../Radio/Radio.h"
+#include "../Power/Power.h"
 #include "../Mqtt/MQTT_credentials.h"
 #include <Update.h>
 #include <mbedtls/base64.h>
@@ -268,6 +269,10 @@ String TinyGSWebServer::buildDashboardPage() {
   }
 
   s += "<tr><td>Radio </td><td>" + String(Radio::getInstance().isReady() ? "<span class='G'>READY</span>" : "<span class='R'>NOT READY</span>") + "</td></tr>";
+  if (AXPchip == 1)
+    s += F("<tr><td>Power IC</td><td>AXP192</td></tr>");
+  else if (AXPchip == 2)
+    s += F("<tr><td>Power IC</td><td>AXP2101</td></tr>");
   s += "<tr><td>Noise Floor</td><td>" + String(status.modeminfo.currentRssi) + "</td></tr>";
   s += F("</table></div>");
 

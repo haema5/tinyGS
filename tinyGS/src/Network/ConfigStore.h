@@ -144,6 +144,10 @@ struct board_t {
   uint8_t L_SPI   = VSPI;     // 3 on classic ESP32 = SPI3(VSPI) — matches Radio.cpp default
 #endif
 
+  // AXP power-management chip (for board detection disambiguation)
+  uint8_t axp_addr = 0;    // I2C address of AXP chip (0x34 or 0 = none)
+  uint8_t axp_chip = 0;    // Chip-ID register value: 0x03=AXP192, 0x4A=AXP2101, 0x00=none
+
   // Ethernet fields (from board template JSON)
   bool    ethEN   = false;
   uint8_t ethPHY  = 0;       // 0=W5500, 1=DM9051, 2=KSZ8851SNL (SPI); 0xFF=InternalEmac
@@ -284,6 +288,9 @@ public:
   // default config of the currently selected board index.
   bool isBoardTemplateModified() const;
 
+  // ---- AXP detection result (set by boardDetection()) ----
+  uint8_t getDetectedAxpChip() const { return _detectedAxpChip; }
+
   // ---- Raw buffer access (for Improv/OTP) ----
   char* stationNameBuffer() { return _stationName; }
   char* apPasswordBuffer()  { return _apPassword; }
@@ -352,6 +359,7 @@ private:
   board_t _boards[NUM_BOARDS];
   board_t _currentBoard;
   bool    _currentBoardDirty = true;
+  uint8_t _detectedAxpChip = 0;  // AXP chip-ID found during boardDetection()
 
   // Internal
   void initBoardTable();

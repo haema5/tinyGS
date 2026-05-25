@@ -71,6 +71,20 @@ void test_esp32c6_all_boards_have_names()
 //         Fase 2b: única entrada en la tabla → detectada.
 void test_esp32c6_Custom_C6_no_radio() { check_board(0); }
 
+// AXP sanity: no C6 board should declare an AXP chip
+void test_esp32c6_no_axp_boards()
+{
+    using namespace esp32c6;
+    for (int i = 0; i < NUM_BOARDS; i++) {
+        char msg[128];
+        snprintf(msg, sizeof(msg),
+                 "ESP32-C6 idx=%d '%s' should have axp_chip==0 and axp_addr==0",
+                 i, boards[i].name);
+        TEST_ASSERT_EQUAL_HEX8_MESSAGE(0, boards[i].axp_chip, msg);
+        TEST_ASSERT_EQUAL_HEX8_MESSAGE(0, boards[i].axp_addr, msg);
+    }
+}
+
 // ---------------------------------------------------------------------------
 //  Fixtures Unity
 // ---------------------------------------------------------------------------
@@ -87,6 +101,9 @@ int main(int /*argc*/, char** /*argv*/)
 
     // Detección por placa
     RUN_TEST(test_esp32c6_Custom_C6_no_radio);  // Fase 2b — única entrada → PASS
+
+    // AXP sanity
+    RUN_TEST(test_esp32c6_no_axp_boards);
 
     UNITY_END();
     print_board_table("ESP32-C6", esp32c6::boards, esp32c6::NUM_BOARDS);

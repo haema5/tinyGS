@@ -65,7 +65,7 @@ void Power::I2Cread(uint8_t Address, uint8_t Register, uint8_t Nbytes, uint8_t* 
 }
 
 
-void Power::checkAXP() 
+void Power::checkAXP(uint8_t knownChipID) 
 { 
    board_t board;
    if (!ConfigStore::getInstance().getBoardConfig(board))
@@ -76,14 +76,23 @@ void Power::checkAXP()
   // fresh Wire instance triggers gpio_matrix_out(255) which crashes the ESP32.
   if (board.OLED__address == 0)
     return;
-  LOG_CONSOLE(PSTR("AXPxxx chip?"));
-  // Suppress expected I2C NACKs — on boards without AXP, address 0x34 will
-  // not ACK and that is normal.  The errors are not real failures.
-  esp_log_level_set("i2c.master", ESP_LOG_NONE);
+
+  byte ChipID;
   byte regV = 0;
-  Wire.begin(board.OLED__SDA, board.OLED__SCL);
-  byte ChipID = I2CreadByte(0x34, 0x03);
-  esp_log_level_set("i2c.master", ESP_LOG_WARN);
+
+  if (knownChipID != 0) {
+    // boardDetection() already probed the AXP — skip redundant I2C init
+    ChipID = knownChipID;
+    Wire.begin(board.OLED__SDA, board.OLED__SCL);
+  } else {
+    LOG_CONSOLE(PSTR("AXPxxx chip?"));
+    // Suppress expected I2C NACKs — on boards without AXP, address 0x34 will
+    // not ACK and that is normal.  The errors are not real failures.
+    esp_log_level_set("i2c.master", ESP_LOG_NONE);
+    Wire.begin(board.OLED__SDA, board.OLED__SCL);
+    ChipID = I2CreadByte(0x34, 0x03);
+    esp_log_level_set("i2c.master", ESP_LOG_WARN);
+  }
   // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
   if (ChipID == XPOWERS_AXP192_CHIP_ID) { // 0x03
     AXPchip = 1;

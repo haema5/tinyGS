@@ -237,7 +237,7 @@ void setup()
   // Wire.end(), so we must re-establish Wire for the OLED display after.
   {
     Power& power = Power::getInstance();
-    power.checkAXP();
+    power.checkAXP(configStore.getDetectedAxpChip());
     // Only re-establish Wire if the board physically has an OLED on an I2C bus.
     // For ethernet-only boards (OLED__address == 0) both SDA and SCL are
     // UNUSED_PIN (255); calling Wire.begin(255, 255) on a fresh Wire instance

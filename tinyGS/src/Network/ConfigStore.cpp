@@ -48,7 +48,10 @@ void ConfigStore::initBoardTable() {
   // ── Indices 0-5 must match beta exactly for backward compatibility ────────
   _boards[i++] = {0x3c, 17, 18, 21, 0, 35, RADIO_SX1262, 8, UNUSED_PIN, 14, 13, 12, 11, 10, 9, 1.6f, UNUSED_PIN, UNUSED_PIN, "150-960Mhz - HELTEC LORA32 V3 SX1262"};                          // 0: HELTEC_LORA32_V3
   _boards[i++] = {0x3c, 17, 18, UNUSED_PIN, 0, 35, RADIO_SX1278, 8, 6, 14, UNUSED_PIN, 12, 11, 10, 9, 0.0f, UNUSED_PIN, UNUSED_PIN, "Custom ESP32-S3 433MHz SX1278"};                           // 1: ESP32S3_SX1278_LF
-  _boards[i++] = {0x3c, 17, 18, UNUSED_PIN, 0, 3, RADIO_SX1262, 10, UNUSED_PIN, 1, 4, 5, 13, 11, 12, 1.6f, UNUSED_PIN, UNUSED_PIN, "433 Mhz TTGO T-Beam Sup SX1262 V1.0"};                     // 2: TTGO_TBEAM_SX1262
+  _boards[i] = {0x3c, 17, 18, UNUSED_PIN, 0, 3, RADIO_SX1262, 10, UNUSED_PIN, 1, 4, 5, 13, 11, 12, 1.6f, UNUSED_PIN, UNUSED_PIN, "433 Mhz TTGO T-Beam Sup SX1262 V1.0"};                      // 2: TTGO_TBEAM_SX1262
+  _boards[i].axp_addr = 0x34;
+  _boards[i].axp_chip = 0x4A; // AXP2101
+  i++;
   _boards[i++] = {0x3c, 18, 17, 21, 0, 35, RADIO_LR1121, 8, UNUSED_PIN, 14, 13, 12, 11, 10, 9, 1.8f, UNUSED_PIN, UNUSED_PIN, "EBYTE EoRa-HUB ESP32S3 + LR1121"};                              // 3: ESP32S3_LR1121
   _boards[i++] = {0x3c, 17, 18, UNUSED_PIN, 0, 37, RADIO_SX1280, 7, UNUSED_PIN, 9, UNUSED_PIN, 8, 3, 6, 5, 0.0f, 21, 10, "2.4Ghz LILYGO SX1280"};                                             // 4: LILYGO_T3S3_SX1280
   _boards[i++] = {0x3c, 17, 18, UNUSED_PIN, 0, 35, RADIO_LR2021, 8, 6, 14, 13, 12, 11, 10, 9, 0.0f, UNUSED_PIN, UNUSED_PIN, "Custom ESP32-S3 433MHz + LR2021"};                                // 5: ESP32S3_LR2021
@@ -81,20 +84,33 @@ void ConfigStore::initBoardTable() {
   _boards[i++] = {0x3c, 4, 15, 16, 0, 2, RADIO_SX1276, 18, 26, UNUSED_PIN, UNUSED_PIN, 14, 19, 27, 5, 0.0f, UNUSED_PIN, UNUSED_PIN, "868-915MHz TTGO LoRa 32 v1"};
   _boards[i++] = {0x3c, 21, 22, UNUSED_PIN, 0, 22, RADIO_SX1278, 18, 26, 33, UNUSED_PIN, 14, 19, 27, 5, 0.0f, UNUSED_PIN, UNUSED_PIN, "433MHz TTGO LoRA 32 v2"};
   _boards[i++] = {0x3c, 21, 22, 16, 0, 22, RADIO_SX1276, 18, 26, 33, UNUSED_PIN, 14, 19, 27, 5, 0.0f, UNUSED_PIN, UNUSED_PIN, "868-915MHz TTGO LoRA 32 v2"};
-  _boards[i++] = {0x3c, 21, 22, 16, 39, 22, RADIO_SX1278, 18, 26, 33, 32, 14, 19, 27, 5, 0.0f, UNUSED_PIN, UNUSED_PIN, "433MHz T-BEAM + OLED"};
-  _boards[i++] = {0x3c, 21, 22, 16, 39, 22, RADIO_SX1276, 18, 26, 33, 32, 14, 19, 27, 5, 0.0f, UNUSED_PIN, UNUSED_PIN, "868-915MHz T-BEAM + OLED"};
+  _boards[i] = {0x3c, 21, 22, 16, 39, 22, RADIO_SX1278, 18, 26, 33, 32, 14, 19, 27, 5, 0.0f, UNUSED_PIN, UNUSED_PIN, "433MHz T-BEAM + OLED"};
+  _boards[i].axp_addr = 0x34;
+  _boards[i].axp_chip = 0x03; // AXP192
+  i++;
+  _boards[i] = {0x3c, 21, 22, 16, 39, 22, RADIO_SX1276, 18, 26, 33, 32, 14, 19, 27, 5, 0.0f, UNUSED_PIN, UNUSED_PIN, "868-915MHz T-BEAM + OLED"};
+  _boards[i].axp_addr = 0x34;
+  _boards[i].axp_chip = 0x03; // AXP192
+  i++;
   _boards[i++] = {0x3c, 21, 22, 16, 0, 25, RADIO_SX1268, 5, UNUSED_PIN, 27, 26, 14, 19, 23, 18, 0.0f, UNUSED_PIN, UNUSED_PIN, "Custom ESP32 Wroom + SX126x (Crystal)"};
   _boards[i++] = {0x3c, 21, 22, UNUSED_PIN, 0, 25, RADIO_SX1268, 18, UNUSED_PIN, 33, 32, 14, 19, 27, 5, 0.0f, UNUSED_PIN, UNUSED_PIN, "TTGO LoRa 32 V2 Modified with module SX126x (crystal)"};
   _boards[i++] = {0x3c, 21, 22, 16, 0, 25, RADIO_SX1268, 5, UNUSED_PIN, 2, 13, 26, 19, 23, 18, 1.6f, UNUSED_PIN, UNUSED_PIN, "Custom ESP32 Wroom + SX126x DRF1268T (TCX0) (5, 2, 26, 13)"};
   _boards[i++] = {0x3c, 21, 22, 16, 0, 25, RADIO_SX1268, 5, UNUSED_PIN, 26, 12, 14, 19, 23, 18, 1.6f, UNUSED_PIN, UNUSED_PIN, "Custom ESP32 Wroom + SX126x DRF1268T (TCX0) (5, 26, 14, 12)"};
-  _boards[i++] = {0x3c, 21, 22, UNUSED_PIN, 38, 22, RADIO_SX1278, 18, 26, 33, UNUSED_PIN, 14, 19, 27, 5, 0.0f, UNUSED_PIN, UNUSED_PIN, "433MHz T-BEAM V1.0 + OLED"};
+  _boards[i] = {0x3c, 21, 22, UNUSED_PIN, 38, 22, RADIO_SX1278, 18, 26, 33, UNUSED_PIN, 14, 19, 27, 5, 0.0f, UNUSED_PIN, UNUSED_PIN, "433MHz T-BEAM V1.0 + OLED"};
+  _boards[i].axp_addr = 0x34;
+  _boards[i].axp_chip = 0x03; // AXP192
+  i++;
   _boards[i++] = {0x3c, 21, 22, 16, 0, 2, RADIO_SX1268, 5, UNUSED_PIN, 34, 32, 14, 19, 27, 18, 1.6f, UNUSED_PIN, UNUSED_PIN, "433MHz FOSSA 1W Ground Station"};
   _boards[i++] = {0x3c, 21, 22, 16, 0, 2, RADIO_SX1276, 5, UNUSED_PIN, 34, 32, 14, 19, 27, 18, 1.6f, UNUSED_PIN, UNUSED_PIN, "868-915MHz FOSSA 1W Ground Station"};
   _boards[i++] = {0x3c, 21, 22, UNUSED_PIN, 0, 22, RADIO_SX1280, 5, 26, 34, 32, 14, 19, 27, 18, 0.0f, UNUSED_PIN, UNUSED_PIN, "2.4GHz ESP32 + SX1280"};
-  _boards[i++] = {0x3c, 21, 22, UNUSED_PIN, 38, 22, RADIO_SX1276, 18, 26, 33, UNUSED_PIN, 14, 19, 27, 5, 0.0f, UNUSED_PIN, UNUSED_PIN, "868-915MHz T-BEAM V1.0 + OLED"};
+  _boards[i] = {0x3c, 21, 22, UNUSED_PIN, 38, 22, RADIO_SX1276, 18, 26, 33, UNUSED_PIN, 14, 19, 27, 5, 0.0f, UNUSED_PIN, UNUSED_PIN, "868-915MHz T-BEAM V1.0 + OLED"};
+  _boards[i].axp_addr = 0x34;
+  _boards[i].axp_chip = 0x03; // AXP192
+  i++;
   _boards[i++] = {0x3c, 21, 22, UNUSED_PIN, 0, 25, RADIO_SX1278, 18, 26, 33, UNUSED_PIN, 23, 19, 27, 5, 0.0f, UNUSED_PIN, UNUSED_PIN, "433MHz LILYGO T3_V1.6.1"};
   _boards[i++] = {0x3c, 21, 22, UNUSED_PIN, 0, 25, RADIO_SX1276, 18, 26, 33, UNUSED_PIN, 23, 19, 27, 5, 0.0f, UNUSED_PIN, UNUSED_PIN, "868-915MHz LILYGO T3_V1.6.1"};
   _boards[i++] = {0x3c, 21, 22, UNUSED_PIN, 0, 25, RADIO_SX1276, 18, 26, UNUSED_PIN, 32, 23, 19, 27, 5, 0.0f, UNUSED_PIN, UNUSED_PIN, "868-915MHz LILYGO T3_V1.6.1 TCXO"};
+  // TODO: verify AXP2101 on T-Beam SX1268 V1.0 — likely axp_addr=0x34, axp_chip=0x4A
   _boards[i++] = {0x3c, 21, 22, UNUSED_PIN, 38, 4, RADIO_SX1268, 18, 26, 33, 32, 23, 19, 27, 5, 1.6f, UNUSED_PIN, UNUSED_PIN, "433 Mhz T-Beam SX1268 V1.0"};
   // WT32-ETH01/02: no OLED, no radio — LAN8720 Internal EMAC
   _boards[i] = {0, UNUSED_PIN, UNUSED_PIN, UNUSED_PIN, UNUSED_PIN, UNUSED_PIN, 0, UNUSED_PIN, UNUSED_PIN, UNUSED_PIN, UNUSED_PIN, UNUSED_PIN, UNUSED_PIN, UNUSED_PIN, UNUSED_PIN, 0.0f, UNUSED_PIN, UNUSED_PIN, "WT32-ETH01/02 (LAN8720)"};
@@ -1306,6 +1322,32 @@ void ConfigStore::boardDetection() {
     LOG_CONSOLE(PSTR("OLED probe: no display found"));
   }
 
+  // ── AXP probe (on the confirmed OLED I2C bus) ─────────────────────────
+  uint8_t detectedAxpChip = 0;
+  if (oledAddr != 0) {
+    // Wire is already initialized from the OLED probe — reuse it
+    esp_log_level_set("i2c.master", ESP_LOG_NONE);
+    Wire.beginTransmission(0x34);
+    if (!Wire.endTransmission()) {
+      // Address 0x34 ACKed — read chip-ID register
+      Wire.beginTransmission(0x34);
+      Wire.write(0x03);
+      Wire.endTransmission();
+      Wire.requestFrom((uint8_t)0x34, (uint8_t)1);
+      if (Wire.available()) {
+        detectedAxpChip = Wire.read();
+      }
+    }
+    esp_log_level_set("i2c.master", ESP_LOG_WARN);
+    _detectedAxpChip = detectedAxpChip;
+
+    if (detectedAxpChip != 0) {
+      LOG_CONSOLE(PSTR("AXP probe: chip ID 0x%02X found"), detectedAxpChip);
+    } else {
+      LOG_CONSOLE(PSTR("AXP probe: no AXP"));
+    }
+  }
+
   if (oledAddr != 0) {
     // ── Phase 3a: Radio probe among OLED-matching candidates ─────────────
     int8_t firstCandidate = -1;
@@ -1315,6 +1357,9 @@ void ConfigStore::boardDetection() {
       if (_boards[ite].OLED__SDA != oledSda)
         continue;
       if (_boards[ite].OLED__SCL != oledScl)
+        continue;
+      // AXP filter: bidirectional strict-equality
+      if (_boards[ite].axp_chip != detectedAxpChip)
         continue;
       if (firstCandidate < 0)
         firstCandidate = (int8_t)ite;

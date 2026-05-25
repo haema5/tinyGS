@@ -127,11 +127,11 @@ void test_esp32_TTGO_LoRA32_V2_433MHz()
 void test_esp32_TTGO_LoRA32_V2_868MHz()
 { check_board(7); }
 
-// idx 8 — SX1278, mismo bus B, mismos pines → COLISIÓN con idx 6.
+// idx 8 — SX1278, bus B, AXP192 → AXP pool {8,9,14,18}, first SX127X = idx 8 → PASS direct.
 void test_esp32_TBEAM_OLED_433MHz()
 { check_board(8); }
 
-// idx 9 — SX1276, mismo bus B, mismos pines → COLISIÓN con idx 6.
+// idx 9 — SX1276, bus B, AXP192 → AXP pool {8,9,14,18}, SX1276≡SX1278 → COLISIÓN con idx 8.
 void test_esp32_TBEAM_OLED_868MHz()
 { check_board(9); }
 
@@ -151,7 +151,7 @@ void test_esp32_DRF1268T_TCXO_5_2_26_13()
 void test_esp32_DRF1268T_TCXO_5_26_14_12()
 { check_board(13); }
 
-// idx 14 — SX1278, bus B, NSS=18 → COLISIÓN con idx 6.
+// idx 14 — SX1278, bus B, AXP192 → AXP pool {8,9,14,18}, first SX1278 = idx 8 → COLISIÓN con idx 8.
 void test_esp32_TBEAM_V1_OLED_433MHz()
 { check_board(14); }
 
@@ -167,7 +167,7 @@ void test_esp32_FOSSA_1W_868MHz()
 void test_esp32_ESP32_SX1280()
 { check_board(17); }
 
-// idx 18 — SX1276, bus B, NSS=18 → COLISIÓN con idx 6.
+// idx 18 — SX1276, bus B, AXP192 → AXP pool {8,9,14,18}, SX1276≡SX1278 first = idx 8 → COLISIÓN con idx 8.
 void test_esp32_TBEAM_V1_OLED_868MHz()
 { check_board(18); }
 
@@ -192,6 +192,71 @@ void test_esp32_TBEAM_SX1268()
 // idx 23 — WT32-ETH01, sin OLED → Fase 2 ETH → PASS (única ETH en tabla ESP32).
 void test_esp32_WT32_ETH01()
 { check_board(23); }
+
+// ---------------------------------------------------------------------------
+//  AXP sanity: boards declaring axp_chip != 0 must have axp_addr == 0x34
+// ---------------------------------------------------------------------------
+void test_esp32_axp_addr_consistency()
+{
+    using namespace esp32;
+    for (int i = 0; i < NUM_BOARDS; i++) {
+        if (boards[i].axp_chip != 0) {
+            char msg[128];
+            snprintf(msg, sizeof(msg),
+                     "ESP32 idx=%d '%s' has axp_chip=0x%02X but axp_addr=0x%02X (expected 0x34)",
+                     i, boards[i].name, boards[i].axp_chip, boards[i].axp_addr);
+            TEST_ASSERT_EQUAL_HEX8_MESSAGE(0x34, boards[i].axp_addr, msg);
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+//  AXP disambiguation: T-Beam V1.1 LF (idx 8) with AXP192 → detected as idx 8
+// ---------------------------------------------------------------------------
+void test_esp32_axp_tbeam_v11_lf()
+{
+    using namespace esp32;
+    int detected = detect_board(boards, NUM_BOARDS, boards[8]);
+    TEST_ASSERT_EQUAL_INT_MESSAGE(8, detected,
+        "T-Beam V1.1 LF (AXP192) should detect as idx 8");
+}
+
+// T-Beam V1.1 HF (idx 9) with AXP192 → collides to idx 8 (SX1276≡SX1278)
+void test_esp32_axp_tbeam_v11_hf()
+{
+    using namespace esp32;
+    int detected = detect_board(boards, NUM_BOARDS, boards[9]);
+    // Accepted collision: SX1276 and SX1278 are same silicon, idx 8 is first in AXP192 pool
+    TEST_ASSERT_EQUAL_INT_MESSAGE(8, detected,
+        "T-Beam V1.1 HF (AXP192) should collide to idx 8 (SX127X ambiguity in AXP pool)");
+}
+
+// T-Beam V1.0 LF (idx 14) with AXP192 → collides to idx 8
+void test_esp32_axp_tbeam_v10_lf()
+{
+    using namespace esp32;
+    int detected = detect_board(boards, NUM_BOARDS, boards[14]);
+    TEST_ASSERT_EQUAL_INT_MESSAGE(8, detected,
+        "T-Beam V1.0 LF (AXP192) should collide to idx 8 (V1.1 appears first in table)");
+}
+
+// T-Beam V1.0 HF (idx 18) with AXP192 → collides to idx 8
+void test_esp32_axp_tbeam_v10_hf()
+{
+    using namespace esp32;
+    int detected = detect_board(boards, NUM_BOARDS, boards[18]);
+    TEST_ASSERT_EQUAL_INT_MESSAGE(8, detected,
+        "T-Beam V1.0 HF (AXP192) should collide to idx 8 (SX127X ambiguity in AXP pool)");
+}
+
+// TTGO LoRa 32 V2 (idx 6) with no AXP → detected directly (AXP filter eliminates T-Beams)
+void test_esp32_axp_ttgo_v2_no_axp()
+{
+    using namespace esp32;
+    int detected = detect_board(boards, NUM_BOARDS, boards[6]);
+    TEST_ASSERT_EQUAL_INT_MESSAGE(6, detected,
+        "TTGO LoRa32 V2 LF (no AXP) should detect as idx 6 directly");
+}
 
 // ---------------------------------------------------------------------------
 //  Fixtures Unity
@@ -237,6 +302,14 @@ int main(int /*argc*/, char** /*argv*/)
 
     // Sin OLED — Ethernet
     RUN_TEST(test_esp32_WT32_ETH01);                  // PASS — Fase 2 ETH
+
+    // AXP sanity and disambiguation
+    RUN_TEST(test_esp32_axp_addr_consistency);
+    RUN_TEST(test_esp32_axp_tbeam_v11_lf);            // idx 8 → direct PASS
+    RUN_TEST(test_esp32_axp_tbeam_v11_hf);            // idx 9 → collision to idx 8
+    RUN_TEST(test_esp32_axp_tbeam_v10_lf);            // idx 14 → collision to idx 8
+    RUN_TEST(test_esp32_axp_tbeam_v10_hf);            // idx 18 → collision to idx 8
+    RUN_TEST(test_esp32_axp_ttgo_v2_no_axp);          // idx 6 → direct PASS (no AXP)
 
     UNITY_END();
     print_board_table("ESP32", esp32::boards, esp32::NUM_BOARDS);

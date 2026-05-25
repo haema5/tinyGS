@@ -119,6 +119,48 @@ void test_esp32s3_Waveshare_ETH_W5500() { check_board(6); }
 void test_esp32s3_EBYTE_EoRa_LR1121()  { check_board(7); }
 
 // ---------------------------------------------------------------------------
+//  AXP sanity: boards declaring axp_chip != 0 must have axp_addr == 0x34
+// ---------------------------------------------------------------------------
+void test_esp32s3_axp_addr_consistency()
+{
+    using namespace esp32s3;
+    for (int i = 0; i < NUM_BOARDS; i++) {
+        if (boards[i].axp_chip != 0) {
+            char msg[128];
+            snprintf(msg, sizeof(msg),
+                     "ESP32-S3 idx=%d '%s' has axp_chip=0x%02X but axp_addr=0x%02X (expected 0x34)",
+                     i, boards[i].name, boards[i].axp_chip, boards[i].axp_addr);
+            TEST_ASSERT_EQUAL_HEX8_MESSAGE(0x34, boards[i].axp_addr, msg);
+        }
+    }
+}
+
+// T-Beam S3 Supreme (idx 2, AXP2101) — already unique by SPI pins,
+// AXP2101 provides a second discriminant. Verify direct detection.
+void test_esp32s3_axp_tbeam_s3_supreme()
+{
+    using namespace esp32s3;
+    int detected = detect_board(boards, NUM_BOARDS, boards[2]);
+    TEST_ASSERT_EQUAL_INT_MESSAGE(2, detected,
+        "T-Beam S3 Supreme (AXP2101) should detect as idx 2 directly (unique SPI + AXP)");
+}
+
+// Negative test: Heltec LORA32 V3 (idx 0, axp_chip=0x00) — if somehow an
+// external device at 0x34 caused a spurious AXP2101 response, the AXP filter
+// would eliminate idx 0 (which declares axp_chip=0x00). This documents a
+// known corner-case limitation of the approach.
+void test_esp32s3_axp_spurious_note()
+{
+    using namespace esp32s3;
+    // Simulate: idx 0 board physically present but "AXP probe returns 0x4A"
+    // In the test framework the probe result equals target.axp_chip, which is 0x00
+    // for idx 0 — so this correctly returns idx 0 (no spurious AXP in normal test).
+    int detected = detect_board(boards, NUM_BOARDS, boards[0]);
+    TEST_ASSERT_EQUAL_INT_MESSAGE(0, detected,
+        "Heltec LORA32 V3 (no AXP) should detect as idx 0 normally");
+}
+
+// ---------------------------------------------------------------------------
 //  Fixtures Unity
 // ---------------------------------------------------------------------------
 void setUp()    {}
@@ -142,6 +184,11 @@ int main(int /*argc*/, char** /*argv*/)
     RUN_TEST(test_esp32s3_HELTEC_WSL_V3);        // Fase 2b — radio-only   → PASS
     RUN_TEST(test_esp32s3_Waveshare_ETH_W5500);  // Fase 2  — ETH          → PASS
     RUN_TEST(test_esp32s3_EBYTE_EoRa_LR1121);   // Fase 1 — bus invertido  → PASS
+
+    // AXP sanity and disambiguation
+    RUN_TEST(test_esp32s3_axp_addr_consistency);
+    RUN_TEST(test_esp32s3_axp_tbeam_s3_supreme);  // idx 2 direct (AXP2101 + unique SPI)
+    RUN_TEST(test_esp32s3_axp_spurious_note);     // idx 0 normal (no AXP)
 
     UNITY_END();
     print_board_table("ESP32-S3", esp32s3::boards, esp32s3::NUM_BOARDS);

@@ -87,6 +87,20 @@ void test_esp32c3_HELTEC_HT_CT62_SX1262() { check_board(0); }
 //         Familia SX127X ≠ SX126X del idx 0 → diferenciable.
 void test_esp32c3_Custom_C3_SX1278()       { check_board(1); }
 
+// AXP sanity: no C3 board should declare an AXP chip
+void test_esp32c3_no_axp_boards()
+{
+    using namespace esp32c3;
+    for (int i = 0; i < NUM_BOARDS; i++) {
+        char msg[128];
+        snprintf(msg, sizeof(msg),
+                 "ESP32-C3 idx=%d '%s' should have axp_chip==0 and axp_addr==0",
+                 i, boards[i].name);
+        TEST_ASSERT_EQUAL_HEX8_MESSAGE(0, boards[i].axp_chip, msg);
+        TEST_ASSERT_EQUAL_HEX8_MESSAGE(0, boards[i].axp_addr, msg);
+    }
+}
+
 // ---------------------------------------------------------------------------
 //  Fixtures Unity
 // ---------------------------------------------------------------------------
@@ -105,6 +119,9 @@ int main(int /*argc*/, char** /*argv*/)
     // Detección por placa
     RUN_TEST(test_esp32c3_HELTEC_HT_CT62_SX1262);  // Fase 1 — OLED+SX126X → PASS
     RUN_TEST(test_esp32c3_Custom_C3_SX1278);        // Fase 1 — OLED+SX127X → PASS
+
+    // AXP sanity
+    RUN_TEST(test_esp32c3_no_axp_boards);
 
     UNITY_END();
     print_board_table("ESP32-C3", esp32c3::boards, esp32c3::NUM_BOARDS);

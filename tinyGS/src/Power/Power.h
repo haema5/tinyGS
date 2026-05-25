@@ -61,6 +61,8 @@
 
 extern Status status;
 
+extern byte AXPchip;  // 0=none, 1=AXP192, 2=AXP2101 (set by checkAXP())
+
 class Power {
 public:
     static Power& getInstance()
@@ -68,7 +70,7 @@ public:
         static Power instance; 
         return instance;
     }
-     void checkAXP(); 
+     void checkAXP(uint8_t knownChipID = 0); 
 private:
     void I2CwriteByte(uint8_t Address, uint8_t Register, uint8_t Data);
     uint8_t I2CreadByte(uint8_t Address, uint8_t Register);
