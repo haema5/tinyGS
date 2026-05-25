@@ -1,0 +1,31 @@
+# Enforce LF for all text files and keep binaries unchanged
+* text=auto eol=lf
+
+# Explicitly set common source and text file types to LF
+*.c text eol=lf
+*.cpp text eol=lf
+*.h text eol=lf
+*.ino text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.sh text eol=lf
+*.py text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.json text eol=lf
+*.csv text eol=lf
+
+# Treat common binary formats as binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.zip binary
+*.bin binary
+*.exe binary
+*.elf binary
+*.pdf binary
+
+# Node modules or other dependency folders (keep as-is)
+node_modules/** -text
