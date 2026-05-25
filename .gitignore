@@ -11,3 +11,6 @@ context_portal
 memvidagentmemory.instructions.md
 
 *.bin
+
+.github/prompts
+.github/skills
