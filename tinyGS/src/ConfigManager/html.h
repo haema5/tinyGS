@@ -66,7 +66,7 @@ const char BOARD_NAMES[][BOARD_NAME_LENGTH] PROGMEM =
 constexpr auto BOARD_LENGTH = 3;
 
 #if CONFIG_IDF_TARGET_ESP32S3
-const char BOARD_VALUES[][BOARD_LENGTH] PROGMEM = {"0", "1", "2","3","4" };
+const char BOARD_VALUES[][BOARD_LENGTH] PROGMEM = {"0", "1", "2", "3", "4", "5" };
 #elif CONFIG_IDF_TARGET_ESP32C3
 const char BOARD_VALUES[][BOARD_LENGTH] PROGMEM = {"0", "1"  };
 #else 
